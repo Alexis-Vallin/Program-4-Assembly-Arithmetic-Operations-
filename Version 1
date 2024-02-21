@@ -1,29 +1,29 @@
-.data  # data segment (where we are declaring our variables)
+.data  # data segment (Where we are declaring our variables)
 
 slopeMessage:    
-    .string "Enter slope (m): "  # Prompt for slope
-    
+    .string "Enter slope (m): "  # Prompt for slope (m)
+     
 inputMessage:
     .string "\nEnter input value (x): " # Prompt for input value (x)
     
 yInterceptMessage:
-    .string "\nEnter a Y intercept (b): " # Prompt for Y intercept
+    .string "\nEnter a Y intercept (b): " # Prompt for Y intercept (y)
     
 finalValueMessage:    
-    .string "\nThe value of your slope is:  "  # Output message for final value of slope
+    .string "\nThe value of your slope is: "  # Output message for final value of slope
     
 newLine:
     .string "\n" # Outputting newline
     
     
-.bss # Area where we are declaring uninitialized variables that the user will initialize
+.bss # Area where we are declaring uninitialized variables that the user will eventually initialize
 
 	.lcomm slopeM, 8
 	.lcomm inputValueX, 8
 	.lcomm yInterceptB, 8
 	.lcomm finalResult, 8
 	
-.text  # code segment (where all of our instructions go)
+.text  # Code segment (where all of our instructions go)
 
 .global main
 
@@ -31,7 +31,7 @@ main:
 
     # Prompting user for Slope
 
-    movq $4, %rax # Enacts sys_write    
+    movq $4, %rax # Calls sys_write    
 	movq $1, %rbx # Tells sys_write to write output to standard output ($1 = stdout)
 	movq $slopeMessage, %rcx # Puts slopeMessage in the argument of sys_write for what to output
 	movq $17, %rdx # Length of string message to be written to standard output
@@ -40,16 +40,16 @@ main:
     
     # Reading input for slopeM
     
-    movq $3, %rax # Enacts sys_read
+    movq $3, %rax # Calls sys_read
     movq $0, %rbx # Tells sys_read to read input to stdin
-    movq $slopeM, %rcx # The destination (slopeM) for the user's input  
+    movq $slopeM, %rcx # The storage (slopeM) for the user's input  
     movq $0x8, %rdx # Length of bytes we are allowing for the user to enter
     int $0x80 # System interrupt
 
     
     # Prompting user for Input Value
 
-    movq $4, %rax # Enacts sys_write    
+    movq $4, %rax # Calls sys_write    
 	movq $1, %rbx # Tells sys_write to write output to standard output ($1 = stdout)
 	movq $inputMessage, %rcx # Puts slopeMessage in the argument of sys_write for what to output
 	movq $24, %rdx # Length of string message to be written to standard output
@@ -58,16 +58,16 @@ main:
     
     # Reading input for inputValueX
     
-    movq $3, %rax # Enacts sys_read
+    movq $3, %rax # Calls sys_read
     movq $0, %rbx # Tells sys_read to read input to stdin
-    movq $inputValueX, %rcx # The destination (slopeM) for the user's input  
+    movq $inputValueX, %rcx # The storage (slopeM) for the user's input  
     movq $0x8, %rdx # Length of bytes we are allowing for the user to enter
     int $0x80 # System interrupt
     
     
     # Prompting user for Y Intercept 
 
-    movq $4, %rax # Enacts sys_write    
+    movq $4, %rax # Calls sys_write    
 	movq $1, %rbx # Tells sys_write to write output to standard output ($1 = stdout)
 	movq $yInterceptMessage, %rcx # Puts slopeMessage in the argument of sys_write for what to output
 	movq $26, %rdx # Length of string message to be written to standard output
@@ -76,13 +76,16 @@ main:
     
     # Reading input for yInterceptB
     
-    movq $3, %rax # Enacts sys_read
+    movq $3, %rax # Calls sys_read
     movq $0, %rbx # Tells sys_read to read input to stdin
-    movq $yInterceptB, %rcx # The destination (slopeM) for the user's input  
+    movq $yInterceptB, %rcx # The storage (slopeM) for the user's input  
     movq $0x8, %rdx # Length of bytes we are allowing for the user to enter
     int $0x80 # System interrupt
     
     
+    
+    
+    # Moving user values into their own separate registers
     movq slopeM, %r8
     movq inputValueX, %r9
 	movq yInterceptB, %r10
@@ -94,31 +97,40 @@ main:
     subq $0x30, %r9
     subq $0x30, %r10
     
+    
+    
 
-    # Computing Slope Intercept Formula
+    /*** Computing Slope Intercept Formula ***/
     
     
-    # compute MX first with imulq
+    # Compute M*X first with imulq
     
-    imulq %r8, %r9
+    imulq %r8, %r9 # (slopeM * inputValueX)
     
     
     # Then add multiplication result to Y Intercept
     
-    addq %r9, %r10
+    addq %r9, %r10 # (multiplication result + yInterceptB)
     
     
     
-    # Then add $0x30 to final result to get decimal value printed 
+    # Then add $0x30 to final result to "switch back" from decimal to ASCII
     
     addq $0x30, %r10
     
     
+    
+    # Store the final resulting value into a variable that will be printed out 
+    
     movq %r10, finalResult
     
     
+    /*** End of Slope Intercept Formula ***/
+
     
-    # Output newline before result
+    
+    
+    # Outputting a newline before the result
     
     movq $4, %rax # sys_write    
 	movq $1, %rbx # $1 is stdout    
@@ -126,47 +138,24 @@ main:
 	movq $0x1, %rdx # length of the message    
 	int  $0x80   # system interrupt to kernel  
 	
-	# Output newline before result
+    
+    
+    # Outputting result message
     
     movq $4, %rax # sys_write    
 	movq $1, %rbx # $1 is stdout    
-	movq $newLine, %rcx # output newLine
-	movq $0x1, %rdx # length of the message    
+	movq $finalValueMessage, %rcx # output result message
+	movq $29, %rdx # length of the message    
 	int  $0x80   # system interrupt to kernel  
     
     
-    # Output final result
+    # Outputting final result
     
     movq $4, %rax # sys_write    
 	movq $1, %rbx # $1 is stdout    
-	movq $finalResult, %rcx # output x    
+	movq $finalResult, %rcx # output final result
 	movq $0x1, %rdx # length of the message    
 	int  $0x80   # system interrupt to kernel  
     
     ret
-    
-/*
-
-Prompt for slope
-
-    read slope
-
-Prompt for input value
-
-    read input value
-
-Prompt for Y intercept
-
-    read Y intercept
-
-With values read, compute slope intercept formula
-
-
-# subtract 
-
-
-
-*/
-
-
     
